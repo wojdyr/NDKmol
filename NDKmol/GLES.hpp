@@ -26,9 +26,6 @@
 #include "TargetConditionals.h"
 #endif
 
-// debug
-#define OPENGL_ES1
-
 #ifdef OPENGL_ES1
 
 #ifdef __ANDROID__
