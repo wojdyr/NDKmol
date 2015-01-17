@@ -5,11 +5,11 @@ include(CheckCXXCompilerFlag)
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(ZLIB REQUIRED)
-include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS})
+include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIR})
 include_directories(${ZLIB_INCLUDE_DIRS})
 include_directories("${PROJECT_SOURCE_DIR}")
 
-option(USE_ES2 "Use OpenGL ES 2" ON)
+option(USE_ES2 "Use OpenGL ES 2" OFF)
 
 # show warnings by default
 check_cxx_compiler_flag(-Wextra HAS_WEXTRA_FLAG)
