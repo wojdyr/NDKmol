@@ -79,6 +79,7 @@ enum {
   kMenuToggleSolvents,
   kMenuToggleUnitCell,
   kMenuToggleHetatmMates,
+  kMenuToggleFullScreen,
   kMenuHelp
 };
 
@@ -255,6 +256,9 @@ static void menu_handler(int option) {
     case kMenuToggleHetatmMates:
       w.symop_hetatms = !w.symop_hetatms;
       break;
+    case kMenuToggleFullScreen:
+      toggle_fullscreen();
+      return; // skip rebuild_scene()
     case kMenuHelp:
       show_help();
       return; // skip rebuild_scene()
@@ -281,9 +285,7 @@ static void on_key(unsigned char key, int /*x*/, int /*y*/) {
       w.cameraZ *= 1.2;
       glutPostRedisplay();
       break;
-    case 'f':
-      toggle_fullscreen();
-      break;
+    case 'f': menu_handler(kMenuToggleFullScreen); break;
     case 's': menu_handler(kMenuToggleSmoothSheets); break;
     case 'd': menu_handler(kMenuToggleSideChains); break;
     case 'c': menu_handler(kMenuToggleUnitCell); break;
@@ -438,6 +440,7 @@ static void create_menu() {
   glutAddMenuEntry("Nucleic Acid Polygons [b]", kMenuNuclAcidPolygon);
   glutAddMenuEntry("Nucleic Acid Lines [n]", kMenuNuclAcidLine);
   glutAddMenuEntry("HETATM symmetry mates [m]", kMenuToggleHetatmMates);
+  glutAddMenuEntry("Full Screen [f]", kMenuToggleFullScreen);
 
 
   glutCreateMenu(menu_handler); // main menu
