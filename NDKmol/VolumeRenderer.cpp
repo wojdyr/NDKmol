@@ -126,7 +126,7 @@ MarchingSquares::MarchingSquares(CCP4file *mapfile) {
 	width = 1;
 	matrix = mapfile->getMatrix(false);
 	
-	vertexBuffer = (float*)malloc(sizeof(float) * maxvert);
+	vertexBuffer = new float[maxvert];
 }
 	
 Mat16 MarchingSquares::getMatrix() {

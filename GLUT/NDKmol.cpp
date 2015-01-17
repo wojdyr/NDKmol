@@ -28,6 +28,7 @@
 // em++  -std=c++11 -I../NDKmol --preload-file initial.pdb -s TOTAL_MEMORY=100000000 -o NDKmol.html *.o NDKmol.cpp
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <string>
 #ifdef __APPLE__
