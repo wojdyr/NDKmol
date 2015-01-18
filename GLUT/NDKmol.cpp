@@ -84,9 +84,12 @@ enum {
 };
 
 struct WindowState {
+  // view
   Vector3 obj;
   float cameraZ, slab_near, slab_far;
   Quaternion rotationQ;
+
+  // fullscreen handling
   bool fullscreen;
   int normal_width, normal_height; // size of normal (not fullscreen) window
 
@@ -95,9 +98,12 @@ struct WindowState {
   int start_x, start_y;
   int mouse_modifier; // Shift, Ctrl etc.
   Vector3 current_obj;
+  float current_cameraZ;
   Quaternion currentQ;
 
-  bool menu_in_use;
+  bool menu_in_use; // not used atm
+
+  // parameters for buildScene()
   int protein_mode;
   int nucleic_acid_mode;
   int hetatm_mode;
@@ -357,7 +363,16 @@ static void on_special_key(int key, int /*x*/, int /*y*/) {
 }
 
 static void on_mouse_move(int x, int y) {
-  if (w.mouse_button == GLUT_LEFT_BUTTON) {
+  if (w.mouse_button == GLUT_LEFT_BUTTON &&
+      (w.mouse_modifier & GLUT_ACTIVE_SHIFT)) {
+    // Shift+Left: zooming + rotation like in JMol
+    w.cameraZ = w.current_cameraZ + (y - w.start_y) * 0.5f;
+    float rot = (x - w.start_x) * 0.0025f;
+    Quaternion dq(0, 0, sin(rot), cos(rot));
+    w.rotationQ = Quaternion::multiply(dq, w.currentQ);
+    glutPostRedisplay();
+  }
+  else if (w.mouse_button == GLUT_LEFT_BUTTON) {
     float dx = (x - w.start_x) / (float)glutGet(GLUT_WINDOW_WIDTH);
     float dy = (y - w.start_y) / (float)glutGet(GLUT_WINDOW_HEIGHT);
     float r = sqrt(dx * dx + dy * dy);
@@ -375,22 +390,22 @@ static void on_mouse_move(int x, int y) {
 }
 
 static void on_mouse_button(int button, int state, int x, int y) {
-  w.mouse_modifier = glutGetModifiers();
   if (button == GLUT_LEFT_BUTTON || button == GLUT_MIDDLE_BUTTON) {
     if (state == GLUT_DOWN) {
       w.mouse_button = button;
+      w.mouse_modifier = glutGetModifiers();
       w.start_x = x;
       w.start_y = y;
       w.current_obj = w.obj;
+      w.current_cameraZ = w.cameraZ;
       w.currentQ = w.rotationQ;
-      // TODO: with Shift+Left: zooming + rotation like in JMol
     } else {
       on_mouse_move(x, y);
       w.mouse_button = -1;
     }
-  } else if ((button == 3 || button == 4)&& state == GLUT_DOWN) { // scroll
+  } else if ((button == 3 || button == 4) && state == GLUT_DOWN) { // scroll
     float zoom_factor = 1.1f;
-    if (w.mouse_modifier & GLUT_ACTIVE_SHIFT)
+    if (glutGetModifiers() & GLUT_ACTIVE_SHIFT)
       zoom_factor = 1.01f;
     if (button == 3)
       w.cameraZ /= zoom_factor;
