@@ -209,6 +209,7 @@ void PDBReader::parse2ndPass() {
 }
 
 Protein* PDBReader::parsePDB(std::string filename) {
+	currentBiomol = 0;
 	std::ifstream ifs(filename.c_str(), std::ios::in);
 
 	//FIXME: error handling
