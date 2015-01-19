@@ -49,6 +49,11 @@
 #define mesg(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
 #define debug(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
 
+// GLUT is apparently deprecated in OSX 10.9
+#if defined(__APPLE__) && defined(OPENGL_DEPRECATED)
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 class Protein;
 extern Protein *protein; // global from NDKmol/NdkView.cpp
 
