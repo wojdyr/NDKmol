@@ -469,15 +469,20 @@ static void create_menu() {
   glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
-// returns uppercased extension
+// returns uppercased extension (if the last extension is GZ, returns EXT.GZ)
 static std::string get_extension(const char* filename) {
   std::string ext;
-  const char* last_dot = strrchr(filename, '.');
-  if (last_dot && last_dot > filename && strcmp(last_dot-1, ".gz") == 0)
-    last_dot = strrchr(last_dot-1, '.');
-  if (last_dot)
-    for (int i = 0; last_dot[i+1] != '\0'; ++i)
-      ext.append(1, toupper(last_dot[i+1]));
+  const char* dot = strrchr(filename, '.');
+  if (dot == NULL)
+    return ext;
+  if (toupper(dot[1]) == 'G' && toupper(dot[2]) == 'Z' && dot[3] == '\0')
+    for (const char *p = dot-1; p > filename; --p)
+      if (*p == '.') {
+        dot = p;
+        break;
+      }
+  for (const char* x = dot+1; *x != '\0'; ++x)
+    ext.append(1, toupper(*x));
   return ext;
 }
 
