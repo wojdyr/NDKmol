@@ -85,6 +85,7 @@ enum {
   kMenuToggleUnitCell,
   kMenuToggleHetatmMates,
   kMenuToggleFullScreen,
+  kMenuToggleFPS,
   kMenuHelp
 };
 
@@ -119,6 +120,11 @@ struct WindowState {
   bool show_solvents;
   bool smoothen;
   bool symop_hetatms;
+
+  // for calculating fps
+  bool calculate_fps;
+  int fps_frame;
+  int fps_time_start;
 };
 
 static WindowState w;
@@ -154,6 +160,19 @@ static void render() {
                  w.rotationQ.getAngle(), w.cameraZ, w.slab_near, w.slab_far);
   nativeGLRender();
   glutSwapBuffers();
+  if (w.calculate_fps) {
+    ++w.fps_frame;
+    int elapsed_time = glutGet(GLUT_ELAPSED_TIME); // time in ms
+    int time_diff = elapsed_time - w.fps_time_start;
+    if (time_diff > 500) {
+      // FPS is for debugging only, it goes to stdout for simplicity
+      printf("FPS: %.1f\n", 1000.0 * w.fps_frame / time_diff);
+      fflush(stdout);
+      w.fps_time_start = elapsed_time;
+      w.fps_frame = 0;
+    }
+    glutPostRedisplay();
+  }
 }
 
 static void rebuild_scene() {
@@ -163,6 +182,14 @@ static void rebuild_scene() {
              w.nucleic_acid_mode, w.show_solvents,
              reset_view, !w.smoothen, w.symop_hetatms);
   glutPostRedisplay();
+}
+
+static void toggle_fps() {
+  w.calculate_fps = !w.calculate_fps;
+  if (w.calculate_fps) {
+    w.fps_time_start = glutGet(GLUT_ELAPSED_TIME);
+    w.fps_frame = 0;
+  }
 }
 
 static void on_change_size(int w, int h) {
@@ -269,6 +296,9 @@ static void menu_handler(int option) {
       break;
     case kMenuToggleFullScreen:
       toggle_fullscreen();
+      return; // skip rebuild_scene()
+    case kMenuToggleFPS:
+      toggle_fps();
       return; // skip rebuild_scene()
     case kMenuHelp:
       show_help();
@@ -461,6 +491,7 @@ static void create_menu() {
   glutAddMenuEntry("Nucleic Acid Lines [n]", kMenuNuclAcidLine);
   glutAddMenuEntry("HETATM symmetry mates [m]", kMenuToggleHetatmMates);
   glutAddMenuEntry("Full Screen [f]", kMenuToggleFullScreen);
+  glutAddMenuEntry("Calculate FPS", kMenuToggleFPS);
 
 
   glutCreateMenu(menu_handler); // main menu
