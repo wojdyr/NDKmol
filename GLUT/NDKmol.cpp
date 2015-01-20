@@ -182,9 +182,16 @@ static void render_status_string() {
   glDisable(GL_FOG);
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glOrtho(0, glutGet(GLUT_WINDOW_WIDTH), 0, glutGet(GLUT_WINDOW_HEIGHT), -1, 1);
+  int width = glutGet(GLUT_WINDOW_WIDTH);
+  glOrtho(0, width, 0, glutGet(GLUT_WINDOW_HEIGHT), -1, 1);
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glColor4f(0.f, 0.f, 0.f, 0.5f);
+  glRectf(0, 0, width, 18);
+  glDisable(GL_BLEND);
+  glRasterPos2i(5, 5);
   glColor3f(0.6f, 1.0f, 0.6f);
   glRasterPos2i(5, 5);
   for (const char* c = w.status_str; *c != '\0'; ++c)
