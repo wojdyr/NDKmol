@@ -45,10 +45,6 @@
 #include "NDKmol/Quaternion.h"
 #include "NDKmol/Vector3.hpp"
 
-// simple output to stdout for now
-#define mesg(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
-#define debug(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
-
 // GLUT is apparently deprecated in OSX 10.9
 #if defined(__APPLE__) && defined(OPENGL_DEPRECATED)
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -121,6 +117,10 @@ struct WindowState {
   bool smoothen;
   bool symop_hetatms;
 
+  // status-bar-like display
+  char status_str[80];
+  int status_timeout;
+
   // for calculating fps
   bool calculate_fps;
   int fps_frame;
@@ -146,10 +146,52 @@ static void init_state() {
   w.show_solvents = false;
   w.smoothen = true;
   w.symop_hetatms = false;
+  w.status_str[0] = '\0';
 }
 
 static Vector3 operator+(const Vector3& a, const Vector3& b) {
   return Vector3(a.x+b.x, a.y+b.y, a.z+b.z);
+}
+
+static void status(const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  vprintf(fmt, args);
+  puts("");
+  fflush(stdout);
+#if defined(_WIN32) && !defined(__CYGWIN__)
+  _vsnprintf(w.status_str, sizeof(w.status_str), fmt, args);
+#else
+  vsnprintf(w.status_str, sizeof(w.status_str), fmt, args);
+#endif
+  va_end(args);
+  w.status_timeout = glutGet(GLUT_ELAPSED_TIME) + 3000;
+  glutPostRedisplay();
+}
+
+// it doesn't restore the state, so it can be called only at the end
+static void render_status_string() {
+  if (w.status_str[0] == '\0')
+    return;
+  if (glutGet(GLUT_ELAPSED_TIME) > w.status_timeout) {
+    w.status_str[0] = '\0';
+    return;
+  }
+  glDisable(GL_LIGHTING);
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_FOG);
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  glOrtho(0, glutGet(GLUT_WINDOW_WIDTH), 0, glutGet(GLUT_WINDOW_HEIGHT), -1, 1);
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  glColor3f(0.6f, 1.0f, 0.6f);
+  glRasterPos2i(5, 5);
+  for (const char* c = w.status_str; *c != '\0'; ++c)
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, *c);
+  glEnable(GL_FOG);
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_LIGHTING);
 }
 
 static void render() {
@@ -159,6 +201,7 @@ static void render() {
   nativeSetScene(w.obj.x, w.obj.y, w.obj.z, ax, ay, az,
                  w.rotationQ.getAngle(), w.cameraZ, w.slab_near, w.slab_far);
   nativeGLRender();
+  render_status_string();
   glutSwapBuffers();
   if (w.calculate_fps) {
     ++w.fps_frame;
@@ -209,7 +252,7 @@ static void toggle_fullscreen() {
 }
 
 static void show_help() {
-  mesg("Help is not implemented yet.");
+  status("Help is not implemented yet.");
 }
 
 static void menu_handler(int option) {
@@ -352,7 +395,7 @@ static void on_key(unsigned char key, int /*x*/, int /*y*/) {
       exit(0);
       break;
     default:
-      mesg("key '%c' does nothing.", key);
+      status("key '%c' does nothing.", key);
   }
 }
 
@@ -531,7 +574,7 @@ static void open_file(const char* filename) {
   else if (ext == "CCP4" || ext == "CCP4.GZ" || ext == "MAP")
     nativeLoadCCP4(filename);
   else
-    mesg("Unrecognized filetype (%s) of: %s", ext.c_str(), filename);
+    status("Unrecognized filetype (%s) of: %s", ext.c_str(), filename);
 }
 
 int main(int argc, char **argv) {
