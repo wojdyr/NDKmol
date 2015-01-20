@@ -52,6 +52,7 @@
 
 class Protein;
 extern Protein *protein; // global from NDKmol/NdkView.cpp
+extern SceneInfo sceneInfo;
 
 enum {
   kMenuProteinTrace,
@@ -85,6 +86,14 @@ enum {
   kMenuHelp
 };
 
+enum MouseFunction {
+  kMouseInactive,
+  kMouseRotate,
+  kMousePan,
+  kMouseZoomRotate, // rotation in the screen plane
+  kMouseMapLevel
+};
+
 struct WindowState {
   // view
   Vector3 obj;
@@ -96,12 +105,12 @@ struct WindowState {
   int normal_width, normal_height; // size of normal (not fullscreen) window
 
   // values stored when mouse button is pressed
-  int mouse_button;
+  MouseFunction mouse;
   int start_x, start_y;
-  int mouse_modifier; // Shift, Ctrl etc.
   Vector3 current_obj;
   float current_cameraZ;
   Quaternion currentQ;
+  float current_isol;
 
   bool menu_in_use; // not used atm
 
@@ -116,6 +125,7 @@ struct WindowState {
   bool show_solvents;
   bool smoothen;
   bool symop_hetatms;
+  float isol; // for map
 
   // status-bar-like display
   char status_str[80];
@@ -134,7 +144,7 @@ static void init_state() {
   w.fullscreen = false;
   w.normal_width = 800;
   w.normal_height = 600;
-  w.mouse_button = -1;
+  w.mouse = kMouseInactive;
   w.menu_in_use = false;
   w.protein_mode = MAINCHAIN_THICKRIBBON;
   w.nucleic_acid_mode = BASE_LINE;
@@ -146,6 +156,8 @@ static void init_state() {
   w.show_solvents = false;
   w.smoothen = true;
   w.symop_hetatms = false;
+  w.isol = 0.5f;
+  //sceneInfo.isol = w.isol;
   w.status_str[0] = '\0';
 }
 
@@ -156,15 +168,15 @@ static Vector3 operator+(const Vector3& a, const Vector3& b) {
 static void status(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
-  vprintf(fmt, args);
-  puts("");
-  fflush(stdout);
 #if defined(_WIN32) && !defined(__CYGWIN__)
-  _vsnprintf(w.status_str, sizeof(w.status_str), fmt, args);
+  int n = _vsnprintf(w.status_str, sizeof(w.status_str), fmt, args);
 #else
-  vsnprintf(w.status_str, sizeof(w.status_str), fmt, args);
+  int n = vsnprintf(w.status_str, sizeof(w.status_str), fmt, args);
 #endif
   va_end(args);
+  (void) n;
+  //if (n >= (int) sizeof(w.status_str)) printf("[%d chars] ", n);
+  puts(w.status_str);
   w.status_timeout = glutGet(GLUT_ELAPSED_TIME) + 3000;
   glutPostRedisplay();
 }
@@ -207,9 +219,11 @@ static void render() {
   w.rotationQ.getAxis(&ax, &ay, &az);
   nativeSetScene(w.obj.x, w.obj.y, w.obj.z, ax, ay, az,
                  w.rotationQ.getAngle(), w.cameraZ, w.slab_near, w.slab_far);
+  nativeUpdateMap(false);
   nativeGLRender();
   render_status_string();
   glutSwapBuffers();
+
   if (w.calculate_fps) {
     ++w.fps_frame;
     int elapsed_time = glutGet(GLUT_ELAPSED_TIME); // time in ms
@@ -449,45 +463,69 @@ static void on_special_key(int key, int /*x*/, int /*y*/) {
 }
 
 static void on_mouse_move(int x, int y) {
-  if (w.mouse_button == GLUT_LEFT_BUTTON &&
-      (w.mouse_modifier & GLUT_ACTIVE_SHIFT)) {
-    // Shift+Left: zooming + rotation like in JMol
-    w.cameraZ = w.current_cameraZ + (y - w.start_y) * 0.5f;
-    float rot = (x - w.start_x) * 0.0025f;
-    Quaternion dq(0, 0, sin(rot), cos(rot));
-    w.rotationQ = Quaternion::multiply(dq, w.currentQ);
-    glutPostRedisplay();
+  switch (w.mouse) {
+    case kMouseZoomRotate: { // zooming + rotation like in JMol
+      w.cameraZ = w.current_cameraZ + (y - w.start_y) * 0.5f;
+      float rot = (x - w.start_x) * 0.0025f;
+      Quaternion dq(0, 0, sin(rot), cos(rot));
+      w.rotationQ = Quaternion::multiply(dq, w.currentQ);
+      break;
+    }
+    case kMouseRotate: {
+      float dx = (x - w.start_x) / (float)glutGet(GLUT_WINDOW_WIDTH);
+      float dy = (y - w.start_y) / (float)glutGet(GLUT_WINDOW_HEIGHT);
+      float r = sqrt(dx * dx + dy * dy);
+      if (r == 0)
+          return;
+      float rs = sin(r * M_PI) / r;
+      Quaternion dq(rs * dy, rs * dx, 0, cos(r * M_PI));
+      w.rotationQ = Quaternion::multiply(dq, w.currentQ);
+      break;
+    }
+    case kMousePan:
+      w.obj = w.current_obj + pan_by(x - w.start_x, y - w.start_y);
+      nativeUpdateMap(false);
+      break;
+    case kMouseMapLevel:
+      w.isol = w.current_isol + (y - w.start_y) * 0.002f;
+      //sceneInfo.isol = w.isol;
+      nativeUpdateMap(true);
+      status("map contour level: %f", w.isol);
+      break;
+    default:
+      return;
   }
-  else if (w.mouse_button == GLUT_LEFT_BUTTON) {
-    float dx = (x - w.start_x) / (float)glutGet(GLUT_WINDOW_WIDTH);
-    float dy = (y - w.start_y) / (float)glutGet(GLUT_WINDOW_HEIGHT);
-    float r = sqrt(dx * dx + dy * dy);
-    if (r == 0)
-        return;
-    float rs = sin(r * M_PI) / r;
-    Quaternion dq(rs * dy, rs * dx, 0, cos(r * M_PI));
-    w.rotationQ = Quaternion::multiply(dq, w.currentQ);
-    glutPostRedisplay();
+  glutPostRedisplay();
+}
+
+static MouseFunction mouse_function(int button, int modif) {
+  if (button == GLUT_LEFT_BUTTON) {
+    if (modif & GLUT_ACTIVE_SHIFT)
+      return kMouseZoomRotate;
+    else
+      return kMouseRotate;
+  } else if (button == GLUT_MIDDLE_BUTTON) {
+    if (modif & GLUT_ACTIVE_SHIFT)
+      return kMouseMapLevel;
+    else
+      return kMousePan;
   }
-  else if (w.mouse_button == GLUT_MIDDLE_BUTTON) {
-    w.obj = w.current_obj + pan_by(x - w.start_x, y - w.start_y);
-    glutPostRedisplay();
-  }
+  return kMouseInactive;
 }
 
 static void on_mouse_button(int button, int state, int x, int y) {
   if (button == GLUT_LEFT_BUTTON || button == GLUT_MIDDLE_BUTTON) {
     if (state == GLUT_DOWN) {
-      w.mouse_button = button;
-      w.mouse_modifier = glutGetModifiers();
+      w.mouse = mouse_function(button, glutGetModifiers());
       w.start_x = x;
       w.start_y = y;
       w.current_obj = w.obj;
       w.current_cameraZ = w.cameraZ;
       w.currentQ = w.rotationQ;
+      w.current_isol = w.isol;
     } else {
       on_mouse_move(x, y);
-      w.mouse_button = -1;
+      w.mouse = kMouseInactive;
     }
   } else if ((button == 3 || button == 4) && state == GLUT_DOWN) { // scroll
     float zoom_factor = 1.1f;
