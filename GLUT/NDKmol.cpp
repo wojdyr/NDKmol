@@ -389,6 +389,7 @@ static void on_key(unsigned char key, int /*x*/, int /*y*/) {
     case 'u': menu_handler(kMenuLigandStick); break;
     case 'i': menu_handler(kMenuLigandLine); break;
     case 'o': menu_handler(kMenuLigandInvisible); break;
+    case 'R': rebuild_scene(); break; // intended for debugging only
 
     case 27: // ESC
     case 'q':
