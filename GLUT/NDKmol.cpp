@@ -52,7 +52,8 @@
 
 class Protein;
 extern Protein *protein; // global from NDKmol/NdkView.cpp
-extern SceneInfo sceneInfo;
+extern float mapRadius;
+extern float mapIsoLevel;
 
 enum {
   kMenuProteinTrace,
@@ -111,6 +112,7 @@ struct WindowState {
   float current_cameraZ;
   Quaternion currentQ;
   float current_isol;
+  float current_radius;
 
   bool menu_in_use; // not used atm
 
@@ -126,6 +128,7 @@ struct WindowState {
   bool smoothen;
   bool symop_hetatms;
   float isol; // for map
+  float map_radius;
 
   // status-bar-like display
   char status_str[80];
@@ -156,8 +159,8 @@ static void init_state() {
   w.show_solvents = false;
   w.smoothen = true;
   w.symop_hetatms = false;
-  w.isol = 0.5f;
-  //sceneInfo.isol = w.isol;
+  mapIsoLevel = w.isol = 0.5f;
+  mapRadius = w.map_radius = 10.0f;
   w.status_str[0] = '\0';
 }
 
@@ -487,10 +490,10 @@ static void on_mouse_move(int x, int y) {
       nativeUpdateMap(false);
       break;
     case kMouseMapLevel:
-      w.isol = w.current_isol + (y - w.start_y) * 0.002f;
-      //sceneInfo.isol = w.isol;
+      mapIsoLevel = w.isol = w.current_isol + (y - w.start_y) * 0.002f;
+      mapRadius = w.map_radius = w.current_radius + (x - w.start_x) * 0.05f;
       nativeUpdateMap(true);
-      status("map contour level: %f", w.isol);
+      status("map contour level: %.2f, radius: %.1f", w.isol, w.map_radius);
       break;
     default:
       return;
@@ -523,6 +526,7 @@ static void on_mouse_button(int button, int state, int x, int y) {
       w.current_cameraZ = w.cameraZ;
       w.currentQ = w.rotationQ;
       w.current_isol = w.isol;
+      w.current_radius = w.map_radius;
     } else {
       on_mouse_move(x, y);
       w.mouse = kMouseInactive;
