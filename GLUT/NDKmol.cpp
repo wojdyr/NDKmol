@@ -27,6 +27,8 @@
 // em++  -std=c++11 -I../NDKmol  -c ../NDKmol/*.cpp
 // em++  -std=c++11 -I../NDKmol --preload-file initial.pdb -s TOTAL_MEMORY=100000000 -o NDKmol.html *.o NDKmol.cpp
 
+#define _USE_MATH_DEFINES // for MSVC
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,7 +39,7 @@
 #else
 #define GL_GLEXT_PROTOTYPES
 #define EGL_EGLEXT_PROTOTYPES
-#include <GL/gl.h>
+// glut includes GL/gl.h (and makes it in a proper way also on Windows)
 #include <GL/glut.h>
 #endif
 
