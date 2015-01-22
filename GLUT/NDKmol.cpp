@@ -63,6 +63,9 @@ extern Protein *protein; // global from NDKmol/NdkView.cpp
 extern float mapRadius;
 extern float mapIsoLevel;
 
+static const char* version = "NDKmol 0.92.1";
+static const char *help_url = "https://github.com/wojdyr/NDKmol";
+
 enum {
   kMenuProteinTrace,
   kMenuProteinThinRibbon,
@@ -304,7 +307,6 @@ static void toggle_fullscreen() {
 }
 
 static void show_help() {
-  const char *help_url = "https://github.com/wojdyr/NDKmol";
 #if defined(__linux__)
   system((std::string("xdg-open ") + help_url).c_str());
 #elif defined(__APPLE__)
@@ -653,6 +655,7 @@ static std::string get_extension(const char* filename) {
 }
 
 static void open_file(const char* filename) {
+  //FIXME: nativeLoad* functions don't check for errors
   std::string ext = get_extension(filename);
   if (ext == "PDB" || ext == "ENT")
     nativeLoadProtein(filename);
@@ -660,24 +663,64 @@ static void open_file(const char* filename) {
     nativeLoadSDF(filename);
   else if (ext == "CCP4" || ext == "CCP4.GZ" || ext == "MAP")
     nativeLoadCCP4(filename);
-  else
+  else {
     status("Unrecognized filetype (%s) of: %s", ext.c_str(), filename);
+    return;
+  }
+  glutSetWindowTitle(filename);
+}
+
+static bool same(const char* a, const char* b) { return strcmp(a, b) == 0; }
+
+static void parse_options(int argc, char** argv) {
+  for (int i = 1; i < argc; ++i) {
+    const char* arg = argv[i];
+    if (same(arg, "-V") || same(arg, "--version")) {
+      printf("%s\n", version);
+      exit(0);
+    }
+    if (same(arg, "-h") || same(arg, "--help")) {
+      printf("Usage: ndkmol protein.pdb [elden.ccp4]\n");
+      exit(0);
+    }
+  }
+}
+
+// portable but suboptimal
+static bool file_exists(const std::string& path) {
+  FILE *f = fopen(path.c_str(), "r");
+  if (f != NULL)
+    fclose(f);
+  return f != NULL;
+}
+
+static std::string pdb_example_path(const char* argv0) {
+#ifdef INITIAL_PDB
+  if file_exists(INITIAL_PDB)
+    return INITIAL_PDB;
+#else
+  std::string dir = argv0;
+  size_t last_sep = dir.find_last_of("/\\");
+  if (last_sep == std::string::npos)
+    dir.clear();
+  else
+    dir.erase(last_sep+1);
+  if (file_exists(dir+"initial.pdb"))
+      return dir+"initial.pdb";
+  if (file_exists(dir+"res/raw/initial.pdb"))
+      return dir+"res/raw/initial.pdb";
+  return "";
+#endif
 }
 
 int main(int argc, char **argv) {
   init_state();
-
-  const char *filename = "res/raw/initial.pdb"; //FIXME
-  std::string title = "NDKmol";
-  if (argc > 1) {
-    filename = argv[1];
-    title = std::string("NDKmol - ") + filename;
-  }
+  parse_options(argc, argv);
 
   glutInit(&argc, argv);
   glutInitWindowSize(w.normal_width, w.normal_height);
   glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
-  glutCreateWindow(title.c_str());
+  glutCreateWindow(version);
   glutDisplayFunc(render);
   glutReshapeFunc(on_change_size);
   glutKeyboardFunc(on_key);
@@ -687,10 +730,13 @@ int main(int argc, char **argv) {
   glutMenuStatusFunc(on_menu_status);
   set_window_icon();
 
-  open_file(filename); //TODO: handling errors
-  if (protein != NULL && argc > 2 &&
-      get_extension(argv[2]).substr(0,4) == "CCP4")
-    nativeLoadCCP4(argv[2]);
+  bool have_file = false;
+  for (int i = 1; i < argc; ++i) {
+    open_file(argv[1]);
+    have_file = true;
+  }
+  if (!have_file)
+    nativeLoadProtein(pdb_example_path(argv[0]).c_str());
 
   nativeAdjustZoom(&w.obj.x, &w.obj.y, &w.obj.z,
                    &w.cameraZ, &w.slab_near, &w.slab_far, false);
