@@ -4,9 +4,9 @@ compiler:
   - clang
 before_install:
   - sudo apt-get install -qq freeglut3-dev
-before_script:
-  - autoreconf -i
-script: cmake . && make && ./ndkmol --version
+script:
+  - cmake . && make && ./ndkmol --version
+  - cmake -D USE_ES2=1 . && make && ./ndkmol --version
 branches:
   only:
     - master
