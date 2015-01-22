@@ -1,15 +1,22 @@
 # NOTE: it's only for GLUT (desktop) version of ndkmol
 cmake_minimum_required(VERSION 2.8)
 
+option(USE_ES2 "Use OpenGL ES 2" OFF)
+option(USE_X11_ICON "Use icon in X11 Window Manager" OFF)
+
 include(CheckCXXCompilerFlag)
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(ZLIB REQUIRED)
+if (USE_X11_ICON)
+  find_package(X11 REQUIRED)
+  add_definitions(-DUSE_X11_ICON)
+endif()
+
 include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIR})
-include_directories(${ZLIB_INCLUDE_DIRS})
+include_directories(${ZLIB_INCLUDE_DIRS} ${X11_INCLUDE_DIR})
 include_directories("${PROJECT_SOURCE_DIR}")
 
-option(USE_ES2 "Use OpenGL ES 2" OFF)
 
 # show warnings by default
 check_cxx_compiler_flag(-Wextra HAS_WEXTRA_FLAG)
@@ -46,6 +53,6 @@ NDKmol/NdkView.cpp           #NDKmol/VolumeRenderer.cpp
 GLUT/NDKmol.cpp)
 
 target_link_libraries(ndkmol ${GLUT_LIBRARY} ${OPENGL_LIBRARIES}
-                             ${ZLIB_LIBRARIES})
+                             ${ZLIB_LIBRARIES} ${X11_Xpm_LIB})
 
 install(TARGETS ndkmol DESTINATION bin)

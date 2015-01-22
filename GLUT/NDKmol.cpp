@@ -41,6 +41,12 @@
 #include <GL/glut.h>
 #endif
 
+#ifdef USE_X11_ICON
+#include <X11/xpm.h>
+#include <GL/glx.h>
+#include "icon.xpm"
+#endif
+
 #include "NDKmol/NdkView.h"
 #include "NDKmol/Quaternion.h"
 #include "NDKmol/Vector3.hpp"
@@ -214,6 +220,26 @@ static void render_status_string() {
   glEnable(GL_FOG);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_LIGHTING);
+}
+
+static void set_window_icon() {
+#ifdef USE_X11_ICON
+  Display *display = glXGetCurrentDisplay();
+  GLXDrawable drawable = glXGetCurrentDrawable();
+  if (!display || !drawable)
+    return;
+  XWMHints* wm_hints = XAllocWMHints();
+  if (!wm_hints)
+    return;
+  Pixmap pixmap;
+  if (XpmCreatePixmapFromData(display, drawable, (char**) icon_xpm, &pixmap,
+                              NULL, NULL) == XpmSuccess) {
+    wm_hints->flags = IconPixmapHint;
+    wm_hints->icon_pixmap = pixmap;
+    XSetWMHints(display, drawable, wm_hints);
+  }
+  XFree(wm_hints);
+#endif
 }
 
 static void render() {
@@ -648,6 +674,7 @@ int main(int argc, char **argv) {
   glutMouseFunc(on_mouse_button);
   glutMotionFunc(on_mouse_move);
   glutMenuStatusFunc(on_menu_status);
+  set_window_icon();
 
   open_file(filename); //TODO: handling errors
   if (protein != NULL && argc > 2 &&
