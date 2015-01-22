@@ -698,7 +698,12 @@ static void parse_options(int argc, char** argv) {
   for (int i = 1; i < argc; ++i) {
     const char* arg = argv[i];
     if (same(arg, "-V") || same(arg, "--version")) {
-      printf("%s\n", version);
+#ifdef OPENGL_ES1
+      const char* flavor = "ES1";
+#else
+      const char* flavor = "ES2";
+#endif
+      printf("%s (%s)\n", version, flavor);
       exit(0);
     }
     if (same(arg, "-h") || same(arg, "--help")) {
