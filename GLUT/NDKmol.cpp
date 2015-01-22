@@ -94,6 +94,7 @@ enum {
   kMenuToggleUnitCell,
   kMenuToggleHetatmMates,
   kMenuToggleFullScreen,
+  kMenuToggleFog,
   kMenuToggleFPS,
   kMenuHelp
 };
@@ -111,6 +112,7 @@ struct WindowState {
   Vector3 obj;
   float cameraZ, slab_near, slab_far;
   Quaternion rotationQ;
+  bool use_fog;
 
   // fullscreen handling
   bool fullscreen;
@@ -155,6 +157,7 @@ static WindowState w;
 
 static void init_state() {
   w.rotationQ.w = -1;
+  w.use_fog = true;
   w.fullscreen = false;
   w.normal_width = 800;
   w.normal_height = 600;
@@ -402,6 +405,11 @@ static void menu_handler(int option) {
     case kMenuToggleFullScreen:
       toggle_fullscreen();
       return; // skip rebuild_scene()
+    case kMenuToggleFog:
+      w.use_fog = !w.use_fog;
+      w.use_fog ? glEnable(GL_FOG) : glDisable(GL_FOG);
+      glutPostRedisplay();
+      return; // skip rebuild_scene()
     case kMenuToggleFPS:
       toggle_fps();
       return; // skip rebuild_scene()
@@ -623,6 +631,7 @@ static void create_menu() {
   glutAddMenuEntry("Nucleic Acid Lines [n]", kMenuNuclAcidLine);
   glutAddMenuEntry("HETATM symmetry mates [m]", kMenuToggleHetatmMates);
   glutAddMenuEntry("Full Screen [f]", kMenuToggleFullScreen);
+  glutAddMenuEntry("\"Fog\"", kMenuToggleFog);
   glutAddMenuEntry("Calculate FPS", kMenuToggleFPS);
 
 
