@@ -29,6 +29,7 @@
 
 #define _USE_MATH_DEFINES // for MSVC
 #include <math.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -759,7 +760,7 @@ int main(int argc, char **argv) {
 
   bool have_file = false;
   for (int i = 1; i < argc; ++i) {
-    open_file(argv[1]);
+    open_file(argv[i]);
     have_file = true;
   }
   if (!have_file)
