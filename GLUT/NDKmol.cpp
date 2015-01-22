@@ -65,7 +65,8 @@ extern float mapRadius;
 extern float mapIsoLevel;
 
 static const char* version = "NDKmol 0.92.1";
-static const char *help_url = "https://github.com/wojdyr/NDKmol";
+static const char *help_url =
+    "https://github.com/wojdyr/NDKmol/wiki/NDKmol-for-Desktop";
 
 enum {
   kMenuProteinTrace,
