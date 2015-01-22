@@ -103,7 +103,8 @@ enum MouseFunction {
   kMouseInactive,
   kMouseRotate,
   kMousePan,
-  kMouseZoomRotate, // rotation in the screen plane
+  kMouseZoomRotate, // zoom + rotation in the screen plane
+  kMouseSlab,
   kMouseMapLevel
 };
 
@@ -125,6 +126,8 @@ struct WindowState {
   float current_cameraZ;
   Quaternion currentQ;
   float current_isol;
+  float current_slab_near;
+  float current_slab_far;
   float current_radius;
 
   bool menu_in_use; // not used atm
@@ -536,6 +539,12 @@ static void on_mouse_move(int x, int y) {
       w.obj = w.current_obj + pan_by(x - w.start_x, y - w.start_y);
       nativeUpdateMap(false);
       break;
+    case kMouseSlab: {
+      w.slab_near = w.current_slab_near + (y - w.start_y) * 0.2f;
+      w.slab_far = w.current_slab_far + (x - w.start_x) * 0.2f;
+      status("slab from %.1f to %.1f", w.slab_near, w.slab_far);
+      break;
+    }
     case kMouseMapLevel:
       mapIsoLevel = w.isol = w.current_isol + (y - w.start_y) * 0.002f;
       mapRadius = w.map_radius = w.current_radius + (x - w.start_x) * 0.05f;
@@ -552,6 +561,8 @@ static MouseFunction mouse_function(int button, int modif) {
   if (button == GLUT_LEFT_BUTTON) {
     if (modif & GLUT_ACTIVE_SHIFT)
       return kMouseZoomRotate;
+    else if (modif & GLUT_ACTIVE_CTRL)
+      return kMouseSlab;
     else
       return kMouseRotate;
   } else if (button == GLUT_MIDDLE_BUTTON) {
@@ -573,6 +584,8 @@ static void on_mouse_button(int button, int state, int x, int y) {
       w.current_cameraZ = w.cameraZ;
       w.currentQ = w.rotationQ;
       w.current_isol = w.isol;
+      w.current_slab_near = w.slab_near;
+      w.current_slab_far = w.slab_far;
       w.current_radius = w.map_radius;
     } else {
       on_mouse_move(x, y);
