@@ -302,7 +302,15 @@ static void toggle_fullscreen() {
 }
 
 static void show_help() {
-  status("Help is not implemented yet.");
+  const char *help_url = "https://github.com/wojdyr/NDKmol";
+#if defined(__linux__)
+  system((std::string("xdg-open ") + help_url).c_str());
+#elif defined(__APPLE__)
+  system((std::string("open ") + help_url).c_str());
+#elif defined (_MSC_VER)
+  ShellExecute(NULL, "open", help_url, NULL, NULL, SW_SHOWNORMAL);
+#endif
+  status("See %s", help_url);
 }
 
 static void menu_handler(int option) {
@@ -440,6 +448,7 @@ static void on_key(unsigned char key, int /*x*/, int /*y*/) {
     case 'i': menu_handler(kMenuLigandLine); break;
     case 'o': menu_handler(kMenuLigandInvisible); break;
     case 'R': rebuild_scene(); break; // intended for debugging only
+    case '?': show_help(); break;
 
     case 27: // ESC
     case 'q':
@@ -619,7 +628,7 @@ static void create_menu() {
   glutAddSubMenu("Color by", color_menu);
   glutAddSubMenu("Show", packing_menu);
   glutAddSubMenu("Toggle", toggle_menu);
-  glutAddMenuEntry("Help", kMenuHelp);
+  glutAddMenuEntry("Help [?]", kMenuHelp);
 
   glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
