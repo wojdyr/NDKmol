@@ -11,6 +11,7 @@ find_package(ZLIB REQUIRED)
 if (USE_X11_ICON)
   find_package(X11 REQUIRED)
   add_definitions(-DUSE_X11_ICON)
+  set(EXTRA_LIBS ${X11_Xpm_LIB})
 endif()
 
 include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIR})
@@ -53,6 +54,6 @@ NDKmol/NdkView.cpp           #NDKmol/VolumeRenderer.cpp
 GLUT/NDKmol.cpp)
 
 target_link_libraries(ndkmol ${GLUT_LIBRARY} ${OPENGL_LIBRARIES}
-                             ${ZLIB_LIBRARIES} ${X11_Xpm_LIB})
+                             ${ZLIB_LIBRARIES} ${EXTRA_LIBS})
 
 install(TARGETS ndkmol DESTINATION bin)
