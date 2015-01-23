@@ -18,6 +18,11 @@ include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIR})
 include_directories(${ZLIB_INCLUDE_DIRS} ${X11_INCLUDE_DIR})
 include_directories("${PROJECT_SOURCE_DIR}")
 
+# FindGLUT.cmake adds Xmu even if it's not needed
+if (NOT GLUT_Xmu_LIBRARY)
+ set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY} ${GLUT_Xi_LIBRARY}
+                    ${GLUT_cocoa_LIBRARY})
+endif()
 
 # show warnings by default
 check_cxx_compiler_flag(-Wextra HAS_WEXTRA_FLAG)
@@ -56,7 +61,7 @@ NDKmol/Matrix.cpp            NDKmol/Vector3.cpp
 NDKmol/NdkView.cpp           #NDKmol/VolumeRenderer.cpp
 GLUT/NDKmol.cpp)
 
-target_link_libraries(ndkmol ${GLUT_LIBRARY} ${OPENGL_LIBRARIES}
+target_link_libraries(ndkmol ${GLUT_LIBRARIES} ${OPENGL_LIBRARIES}
                              ${ZLIB_LIBRARIES} ${EXTRA_LIBS})
 
 install(TARGETS ndkmol DESTINATION bin)
