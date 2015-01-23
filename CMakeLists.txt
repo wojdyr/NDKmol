@@ -18,11 +18,15 @@ include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIR})
 include_directories(${ZLIB_INCLUDE_DIRS} ${X11_INCLUDE_DIR})
 include_directories("${PROJECT_SOURCE_DIR}")
 
-# FindGLUT.cmake adds Xmu even if it's not needed
+# FindGLUT.cmake adds libXmu and libXi even if it's not needed
 if (NOT GLUT_Xmu_LIBRARY)
- set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY} ${GLUT_Xi_LIBRARY}
-                    ${GLUT_cocoa_LIBRARY})
+  set(GLUT_Xmu_LIBRARY "")
 endif()
+if (NOT GLUT_Xi_LIBRARY)
+  set(GLUT_Xi_LIBRARY "")
+endif()
+set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY} ${GLUT_Xmu_LIBRARY} ${GLUT_Xi_LIBRARY}
+                   ${GLUT_cocoa_LIBRARY})
 
 # show warnings by default
 check_cxx_compiler_flag(-Wextra HAS_WEXTRA_FLAG)
