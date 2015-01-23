@@ -230,7 +230,8 @@ static void render_status_string() {
   glRasterPos2i(5, 5);
   for (const char* c = w.status_str; *c != '\0'; ++c)
     glutBitmapCharacter(GLUT_BITMAP_9_BY_15, *c);
-  glEnable(GL_FOG);
+  if (w.use_fog)
+    glEnable(GL_FOG);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_LIGHTING);
 }
@@ -725,9 +726,9 @@ static bool file_exists(const std::string& path) {
 
 static std::string pdb_example_path(const char* argv0) {
 #ifdef INITIAL_PDB
-  if file_exists(INITIAL_PDB)
+  if (file_exists(INITIAL_PDB))
     return INITIAL_PDB;
-#else
+#endif
   std::string dir = argv0;
   size_t last_sep = dir.find_last_of("/\\");
   if (last_sep == std::string::npos)
@@ -739,7 +740,6 @@ static std::string pdb_example_path(const char* argv0) {
   if (file_exists(dir+"res/raw/initial.pdb"))
       return dir+"res/raw/initial.pdb";
   return "";
-#endif
 }
 
 int main(int argc, char **argv) {

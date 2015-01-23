@@ -37,6 +37,9 @@ if (NOT USE_ES2)
   add_definitions(-DOPENGL_ES1)
 endif()
 
+add_definitions("-DINITIAL_PDB=\"${CMAKE_INSTALL_PREFIX}/share/ndkmol/initial.pdb\"")
+
+
 add_executable(ndkmol
 NDKmol/Atom.cpp              NDKmol/PDBReader.cpp
 NDKmol/CCP4Reader.cpp        NDKmol/Protein.cpp
@@ -57,3 +60,4 @@ target_link_libraries(ndkmol ${GLUT_LIBRARY} ${OPENGL_LIBRARIES}
                              ${ZLIB_LIBRARIES} ${EXTRA_LIBS})
 
 install(TARGETS ndkmol DESTINATION bin)
+install(FILES res/raw/initial.pdb DESTINATION share/ndkmol/)
