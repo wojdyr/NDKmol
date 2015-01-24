@@ -1,5 +1,5 @@
 # NOTE: it's only for GLUT (desktop) version of ndkmol
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.6)
 
 option(USE_ES2 "Use OpenGL ES 2" OFF)
 option(USE_X11_ICON "Use icon in X11 Window Manager" OFF)
