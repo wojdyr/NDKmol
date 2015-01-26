@@ -725,6 +725,7 @@ static bool file_exists(const std::string& path) {
 }
 
 static std::string pdb_example_path(const char* argv0) {
+  const char* pdb_name = "initial.pdb";
 #ifdef INITIAL_PDB
   if (file_exists(INITIAL_PDB))
     return INITIAL_PDB;
@@ -735,10 +736,14 @@ static std::string pdb_example_path(const char* argv0) {
     dir.clear();
   else
     dir.erase(last_sep+1);
-  if (file_exists(dir+"initial.pdb"))
-      return dir+"initial.pdb";
-  if (file_exists(dir+"res/raw/initial.pdb"))
-      return dir+"res/raw/initial.pdb";
+#ifdef __APPLE__
+  if (file_exists(dir+"../Resources/"+pdb_name))
+      return dir+"../Resources/"+pdb_name;
+#endif
+  if (file_exists(dir+pdb_name))
+      return dir+pdb_name;
+  if (file_exists(dir+"res/raw/" + pdb_name))
+      return dir+"res/raw/" + pdb_name;
   return "";
 }
 
