@@ -86,8 +86,8 @@ res/raw/initial.pdb
 #                              MACOSX_PACKAGE_LOCATION Resources)
 #endif()
 
-target_link_libraries(ndkmol ${GLUT_LIBRARIES} ${OPENGL_LIBRARIES}
-                             ${ZLIB_LIBRARIES} ${EXTRA_LIBS})
+target_link_libraries(ndkmol ${EXTRA_LIBS} ${GLUT_LIBRARIES}
+                             ${OPENGL_LIBRARIES} ${ZLIB_LIBRARIES})
 
 # check if the program starts at least
 add_custom_target(check COMMAND ndkmol "--version")
