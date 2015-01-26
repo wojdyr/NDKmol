@@ -2,13 +2,18 @@
 cmake_minimum_required(VERSION 2.6)
 
 option(USE_ES2 "Use OpenGL ES 2" OFF)
-option(USE_X11_ICON "Use icon in X11 Window Manager" OFF)
+if(UNIX AND NOT APPLE)
+ option(USE_X11_ICON "Use icon in X11 Window Manager" ON)
+endif()
+#if(APPLE)
+# option(MACOSX_BUNDLE "Make OSX app bundle" OFF)
+#endif()
 
 include(CheckCXXCompilerFlag)
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(ZLIB REQUIRED)
-if (USE_X11_ICON)
+if (DEFINED USE_X11_ICON AND USE_X11_ICON)
   find_package(X11 REQUIRED)
   add_definitions(-DUSE_X11_ICON)
   set(EXTRA_LIBS ${X11_Xpm_LIB})
@@ -49,7 +54,7 @@ endif()
 add_definitions("-DINITIAL_PDB=\"${CMAKE_INSTALL_PREFIX}/share/ndkmol/initial.pdb\"")
 
 
-add_executable(ndkmol
+add_executable(ndkmol WIN32
 NDKmol/Atom.cpp              NDKmol/PDBReader.cpp
 NDKmol/CCP4Reader.cpp        NDKmol/Protein.cpp
 NDKmol/ChemDatabase.cpp      NDKmol/Quaternion.cpp
@@ -63,10 +68,25 @@ NDKmol/MarchingSquares.cpp   NDKmol/VBOCylinder.cpp
 NDKmol/MatRenderable.cpp     NDKmol/VBOSphere.cpp
 NDKmol/Matrix.cpp            NDKmol/Vector3.cpp
 NDKmol/NdkView.cpp           #NDKmol/VolumeRenderer.cpp
-GLUT/NDKmol.cpp)
+GLUT/NDKmol.cpp
+res/raw/initial.pdb
+)
+
+# We could make an app bundle, but would it be useful?
+#if (APPLE AND MACOSX_BUNDLE)
+#  set_target_properties(ndkmol PROPERTIES
+#                        MACOSX_BUNDLE TRUE
+#                        MACOSX_BUNDLE_BUNDLE_NAME "NDKmol")
+#  set(MACOSX_BUNDLE_ICON_FILE ndkmol.icns)
+#  set_source_files_properties(res/raw/initial.pdb PROPERTIES
+#                              MACOSX_PACKAGE_LOCATION Resources)
+#endif()
 
 target_link_libraries(ndkmol ${GLUT_LIBRARIES} ${OPENGL_LIBRARIES}
                              ${ZLIB_LIBRARIES} ${EXTRA_LIBS})
+
+# check if the program starts at least
+add_custom_target(check COMMAND ndkmol "--version")
 
 install(TARGETS ndkmol DESTINATION bin)
 install(FILES res/raw/initial.pdb DESTINATION share/ndkmol/)
