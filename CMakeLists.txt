@@ -1,5 +1,7 @@
 # NOTE: it's only for GLUT (desktop) version of ndkmol
+project(NDKmol CXX)
 cmake_minimum_required(VERSION 2.6)
+cmake_policy(VERSION 3.1)
 
 option(USE_ES2 "Use OpenGL ES 2" OFF)
 if(UNIX AND NOT APPLE)
@@ -8,6 +10,9 @@ endif()
 #if(APPLE)
 # option(MACOSX_BUNDLE "Make OSX app bundle" OFF)
 #endif()
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+ add_definitions(-D_USE_MATH_DEFINES)
+endif()
 
 include(CheckCXXCompilerFlag)
 find_package(OpenGL REQUIRED)

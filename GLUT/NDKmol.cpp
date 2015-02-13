@@ -43,6 +43,9 @@
 // glut includes GL/gl.h (and makes it in a proper way also on Windows)
 #include <GL/glut.h>
 #endif
+#ifdef _MSC_VER
+#include "Shellapi.h"  // for ShellExecute
+#endif
 
 #ifdef USE_X11_ICON
 #include <X11/xpm.h>
@@ -427,7 +430,7 @@ static void menu_handler(int option) {
 }
 
 static Vector3 pan_by(float dx, float dy) {
-  float f = -w.cameraZ * 0.0005;
+  float f = -w.cameraZ * 0.0005f;
   Vector3 v(f * dx, -f * dy, 0);
   w.rotationQ.rotateVector(v.x, v.y, v.z, &v.x, &v.y, &v.z);
   return v;
@@ -437,12 +440,12 @@ static void on_key(unsigned char key, int /*x*/, int /*y*/) {
   switch(key) {
     case '+':
     case '=':
-      w.cameraZ /= 1.2;
+      w.cameraZ /= 1.2f;
       glutPostRedisplay();
       break;
     case '-':
     case '_':
-      w.cameraZ *= 1.2;
+      w.cameraZ *= 1.2f;
       glutPostRedisplay();
       break;
     case 'f': menu_handler(kMenuToggleFullScreen); break;
