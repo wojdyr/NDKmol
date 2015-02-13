@@ -1,5 +1,5 @@
 # NOTE: it's only for GLUT (desktop) version of ndkmol
-project(NDKmol CXX)
+project(NDKmol C CXX)
 cmake_minimum_required(VERSION 2.6)
 cmake_policy(VERSION 3.1)
 
