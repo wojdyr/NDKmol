@@ -62,6 +62,9 @@ endif()
 
 add_definitions("-DINITIAL_PDB=\"${CMAKE_INSTALL_PREFIX}/share/ndkmol/initial.pdb\"")
 
+if(WIN32)
+  set(RCFILE GLUT/ndkmol.rc)
+endif()
 
 add_executable(ndkmol WIN32
 NDKmol/Atom.cpp              NDKmol/PDBReader.cpp
@@ -78,6 +81,7 @@ NDKmol/MatRenderable.cpp     NDKmol/VBOSphere.cpp
 NDKmol/Matrix.cpp            NDKmol/Vector3.cpp
 NDKmol/NdkView.cpp           #NDKmol/VolumeRenderer.cpp
 GLUT/NDKmol.cpp
+${RCFILE}
 res/raw/initial.pdb
 )
 

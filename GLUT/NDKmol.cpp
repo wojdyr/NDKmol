@@ -27,7 +27,6 @@
 // em++  -std=c++11 -I../NDKmol  -c ../NDKmol/*.cpp
 // em++  -std=c++11 -I../NDKmol --preload-file initial.pdb -s TOTAL_MEMORY=100000000 -o NDKmol.html *.o NDKmol.cpp
 
-#define _USE_MATH_DEFINES // for MSVC
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -38,9 +37,7 @@
 #include <OpenGL/gl.h>
 #include <Glut/glut.h>
 #else
-#define GL_GLEXT_PROTOTYPES
-#define EGL_EGLEXT_PROTOTYPES
-// glut includes GL/gl.h (and makes it in a proper way also on Windows)
+#include "NDKmol/GLES.hpp"
 #include <GL/glut.h>
 #endif
 #ifdef _MSC_VER
@@ -650,7 +647,7 @@ static void create_menu() {
   glutAddMenuEntry("Nucleic Acid Lines [n]", kMenuNuclAcidLine);
   glutAddMenuEntry("HETATM symmetry mates [m]", kMenuToggleHetatmMates);
   glutAddMenuEntry("Full Screen [f]", kMenuToggleFullScreen);
-  glutAddMenuEntry("\"Fog\"", kMenuToggleFog);
+  glutAddMenuEntry("Depth Cue", kMenuToggleFog);
   glutAddMenuEntry("Calculate FPS", kMenuToggleFPS);
 
 
@@ -753,11 +750,13 @@ static std::string pdb_example_path(const char* argv0) {
 int main(int argc, char **argv) {
   init_state();
   parse_options(argc, argv);
-
   glutInit(&argc, argv);
   glutInitWindowSize(w.normal_width, w.normal_height);
   glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
   glutCreateWindow(version);
+#ifdef _WIN32
+  PrepareGlFunctions();
+#endif
   glutDisplayFunc(render);
   glutReshapeFunc(on_change_size);
   glutKeyboardFunc(on_key);
@@ -785,5 +784,11 @@ int main(int argc, char **argv) {
 
   return 0;
 }
+
+#ifdef _WIN32
+int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+  return main(__argc, __argv);
+}
+#endif
 
 // vim: et:ts=2:sw=2
