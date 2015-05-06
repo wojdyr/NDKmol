@@ -3,12 +3,17 @@ project(NDKmol C CXX)
 cmake_minimum_required(VERSION 2.6)
 
 option(USE_ES2 "Use OpenGL ES 2" OFF)
+option(USE_NFD "Use nativefiledialog library" OFF)
 if(UNIX AND NOT APPLE)
  option(USE_X11_ICON "Use icon in X11 Window Manager" ON)
 endif()
 #if(APPLE)
 # option(MACOSX_BUNDLE "Make OSX app bundle" OFF)
 #endif()
+
+if (POLICY CMP0011) # for FindGTK2
+  cmake_policy(SET CMP0011 NEW)
+endif()
 
 if ("x${CMAKE_CXX_COMPILER_ID}" STREQUAL "xMSVC") # avoiding dereferencing MSVC
  add_definitions(-D_USE_MATH_DEFINES)  # needed for M_PI
@@ -26,6 +31,38 @@ if (DEFINED USE_X11_ICON AND USE_X11_ICON)
   endif()
   add_definitions(-DUSE_X11_ICON)
   set(EXTRA_LIBS ${X11_Xpm_LIB})
+endif()
+
+if (USE_NFD)
+  add_definitions(-DUSE_NFD)
+  find_path(NFD_INCLUDE nfd.h)
+  if (NOT NFD_INCLUDE)
+    include(ExternalProject)
+    ExternalProject_Add(nativefiledialog
+      GIT_REPOSITORY git@github.com:mlabbe/nativefiledialog.git
+      SOURCE_DIR ${CMAKE_SOURCE_DIR}/nfd
+      PREFIX nfd-stamps
+      CONFIGURE_COMMAND ""
+      BUILD_COMMAND ""
+      INSTALL_COMMAND "")
+    set(NFD_SRC ${CMAKE_SOURCE_DIR}/nfd/src)
+    set(NFD_INCLUDE ${NFD_SRC}/include)
+    include_directories(${NFD_INCLUDE})
+    if (WIN32)
+      set(NFD_PLAT_SRC ${NFD_SRC}/nfd_win.cpp)
+    elseif (APPLE)
+      set(NFD_PLAT_SRC ${NFD_SRC}/nfd_cocoa.m)
+    else()
+      find_package(GTK2 2.6 REQUIRED gtk)
+      set(NFD_PLAT_SRC ${NFD_SRC}/nfd_gtk.c)
+    endif()
+    set_source_files_properties(${NFD_SRC}/nfd_common.c ${NFD_PLAT_SRC}
+                                PROPERTIES GENERATED TRUE)
+    add_library(nfd STATIC ${NFD_SRC}/nfd_common.c ${NFD_PLAT_SRC})
+    set_property(TARGET nfd PROPERTY INCLUDE_DIRECTORIES
+                 ${NFD_INCLUDE} ${GTK2_INCLUDE_DIRS})
+    set(EXTRA_LIBS ${EXTRA_LIBS} nfd ${GTK2_LIBRARIES})
+  endif()
 endif()
 
 include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIR})
@@ -84,6 +121,11 @@ GLUT/NDKmol.cpp
 ${RCFILE}
 res/raw/initial.pdb
 )
+
+if (USE_NFD)
+  add_dependencies(ndkmol nativefiledialog)
+endif()
+
 
 # We could make an app bundle, but would it be useful?
 #if (APPLE AND MACOSX_BUNDLE)

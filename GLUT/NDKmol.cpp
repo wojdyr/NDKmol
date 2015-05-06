@@ -50,6 +50,10 @@
 #include "icon.xpm"
 #endif
 
+#ifdef USE_NFD
+#include <nfd.h>
+#endif
+
 #include "NDKmol/NdkView.h"
 #include "NDKmol/Quaternion.h"
 #include "NDKmol/Vector3.hpp"
@@ -69,6 +73,7 @@ static const char *help_url =
     "https://github.com/wojdyr/NDKmol/wiki/NDKmol-for-Desktop";
 
 enum {
+  kMenuOpenFile,
   kMenuProteinTrace,
   kMenuProteinThinRibbon,
   kMenuProteinThickRibbon,
@@ -326,8 +331,66 @@ static void show_help() {
   status("See %s", help_url);
 }
 
+// returns uppercased extension (if the last extension is GZ, returns EXT.GZ)
+static std::string get_extension(const char* filename) {
+  std::string ext;
+  const char* dot = strrchr(filename, '.');
+  if (dot == NULL)
+    return ext;
+  if (toupper(dot[1]) == 'G' && toupper(dot[2]) == 'Z' && dot[3] == '\0')
+    for (const char *p = dot-1; p > filename; --p)
+      if (*p == '.') {
+        dot = p;
+        break;
+      }
+  for (const char* x = dot+1; *x != '\0'; ++x)
+    ext.append(1, toupper(*x));
+  return ext;
+}
+
+static void open_file(const char* filename) {
+  //FIXME: nativeLoad* functions don't check for errors
+  std::string ext = get_extension(filename);
+  if (ext == "PDB" || ext == "ENT")
+    nativeLoadProtein(filename);
+  else if (ext == "SDF" || ext == "MOL")
+    nativeLoadSDF(filename);
+  else if (ext == "CCP4" || ext == "CCP4.GZ" || ext == "MAP")
+    nativeLoadCCP4(filename);
+  else {
+    status("Unrecognized filetype (%s) of: %s", ext.c_str(), filename);
+    return;
+  }
+  glutSetWindowTitle(filename);
+}
+
+static void open_file_dialog() {
+#if USE_NFD
+  nfdchar_t *path = NULL;
+  nfdresult_t result = NFD_OpenDialog("pdb,PDB,ent,sdf,mol;ccp4,ccp4.gz,map",
+                                       NULL, &path);
+  if (result == NFD_OKAY) {
+    open_file(path);
+    free(path);
+  }
+  else if (result == NFD_CANCEL) {
+    status("Opening a file cancelled.");
+  }
+  else {
+    status("Error: %s\n", NFD_GetError());
+  }
+#else
+  status("This version is built without file dialogs.");
+#endif
+}
+
 static void menu_handler(int option) {
   switch (option) {
+    case kMenuOpenFile:
+      open_file_dialog();
+      nativeAdjustZoom(&w.obj.x, &w.obj.y, &w.obj.z,
+                       &w.cameraZ, &w.slab_near, &w.slab_far, false);
+      break;
     case kMenuProteinTrace:
       w.protein_mode = MAINCHAIN_TRACE;
       break;
@@ -445,6 +508,7 @@ static void on_key(unsigned char key, int /*x*/, int /*y*/) {
       w.cameraZ *= 1.2f;
       glutPostRedisplay();
       break;
+    case 'o': menu_handler(kMenuOpenFile); break;
     case 'f': menu_handler(kMenuToggleFullScreen); break;
     case 's': menu_handler(kMenuToggleSmoothSheets); break;
     case 'd': menu_handler(kMenuToggleSideChains); break;
@@ -464,7 +528,7 @@ static void on_key(unsigned char key, int /*x*/, int /*y*/) {
     case 'y': menu_handler(kMenuLigandSphere); break;
     case 'u': menu_handler(kMenuLigandStick); break;
     case 'i': menu_handler(kMenuLigandLine); break;
-    case 'o': menu_handler(kMenuLigandInvisible); break;
+    case 'l': menu_handler(kMenuLigandInvisible); break;
     case 'R': rebuild_scene(); break; // intended for debugging only
     case '?': show_help(); break;
 
@@ -624,7 +688,7 @@ static void create_menu() {
   glutAddMenuEntry("Sphere [y]", kMenuLigandSphere);
   glutAddMenuEntry("Stick [u]", kMenuLigandStick);
   glutAddMenuEntry("Line [i]", kMenuLigandLine);
-  glutAddMenuEntry("Invisible [o]", kMenuLigandInvisible);
+  glutAddMenuEntry("Invisible [l]", kMenuLigandInvisible);
 
   int color_menu = glutCreateMenu(menu_handler);
   glutAddMenuEntry("Rainbow [1]", kMenuColorRainbow);
@@ -652,6 +716,7 @@ static void create_menu() {
 
 
   glutCreateMenu(menu_handler); // main menu
+  glutAddMenuEntry("Open File [o]", kMenuOpenFile);
   glutAddSubMenu("Polymer as", polymer_menu);
   glutAddSubMenu("Ligands as", ligands_menu);
   glutAddSubMenu("Color by", color_menu);
@@ -660,39 +725,6 @@ static void create_menu() {
   glutAddMenuEntry("Help [?]", kMenuHelp);
 
   glutAttachMenu(GLUT_RIGHT_BUTTON);
-}
-
-// returns uppercased extension (if the last extension is GZ, returns EXT.GZ)
-static std::string get_extension(const char* filename) {
-  std::string ext;
-  const char* dot = strrchr(filename, '.');
-  if (dot == NULL)
-    return ext;
-  if (toupper(dot[1]) == 'G' && toupper(dot[2]) == 'Z' && dot[3] == '\0')
-    for (const char *p = dot-1; p > filename; --p)
-      if (*p == '.') {
-        dot = p;
-        break;
-      }
-  for (const char* x = dot+1; *x != '\0'; ++x)
-    ext.append(1, toupper(*x));
-  return ext;
-}
-
-static void open_file(const char* filename) {
-  //FIXME: nativeLoad* functions don't check for errors
-  std::string ext = get_extension(filename);
-  if (ext == "PDB" || ext == "ENT")
-    nativeLoadProtein(filename);
-  else if (ext == "SDF" || ext == "MOL")
-    nativeLoadSDF(filename);
-  else if (ext == "CCP4" || ext == "CCP4.GZ" || ext == "MAP")
-    nativeLoadCCP4(filename);
-  else {
-    status("Unrecognized filetype (%s) of: %s", ext.c_str(), filename);
-    return;
-  }
-  glutSetWindowTitle(filename);
 }
 
 static bool same(const char* a, const char* b) { return strcmp(a, b) == 0; }
