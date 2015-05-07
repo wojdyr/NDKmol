@@ -3,13 +3,19 @@ project(NDKmol C CXX)
 cmake_minimum_required(VERSION 2.6)
 
 option(USE_ES2 "Use OpenGL ES 2" OFF)
-option(USE_NFD "Use nativefiledialog library" OFF)
+option(USE_NFD "Use nativefiledialog library" ON)
+option(DOWNLOAD_ZLIB "Fetch zlib from its website" OFF)
+option(DOWNLOAD_FREEGLUT "Fetch freeglut from its website" OFF)
 if(UNIX AND NOT APPLE)
  option(USE_X11_ICON "Use icon in X11 Window Manager" ON)
 endif()
 #if(APPLE)
 # option(MACOSX_BUNDLE "Make OSX app bundle" OFF)
 #endif()
+
+# TODO: ${THIRDPARTY_INSTALL} is used during 'make' so should be user-writable,
+# OTOH libraries are needed at runtime
+set(THIRDPARTY_INSTALL "${CMAKE_INSTALL_PREFIX}")
 
 if (POLICY CMP0011) # for FindGTK2
   cmake_policy(SET CMP0011 NEW)
@@ -21,8 +27,78 @@ endif()
 
 include(CheckCXXCompilerFlag)
 find_package(OpenGL REQUIRED)
-find_package(GLUT REQUIRED)
-find_package(ZLIB REQUIRED)
+
+set(LIB_PREFIX ${CMAKE_STATIC_LIBRARY_PREFIX})
+set(LIB_SUFFIX ${CMAKE_STATIC_LIBRARY_SUFFIX})
+
+set(thirdparty_dir ${CMAKE_SOURCE_DIR}/3rdparty)
+if (DOWNLOAD_ZLIB)
+  include(ExternalProject)
+  ExternalProject_Add(zlib
+    URL "http://zlib.net/zlib-1.2.8.tar.gz"
+    URL_MD5 44d667c142d7cda120332623eab69f40
+    DOWNLOAD_DIR ${thirdparty_dir}
+    SOURCE_DIR ${thirdparty_dir}/zlib
+    BINARY_DIR ${CMAKE_BINARY_DIR}/zlib
+    PREFIX zlib-stamps
+    CMAKE_ARGS -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS}
+               -DCMAKE_INSTALL_PREFIX:PATH=${THIRDPARTY_INSTALL}
+               -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+               -DSKIP_INSTALL_FILES=ON)
+  set(ZLIB_INCLUDE_DIR "${THIRDPARTY_INSTALL}/include")
+  if (WIN32)
+    set(ZLIB_NAME zlibstatic)
+  else()
+    set(ZLIB_NAME libz)
+  endif()
+  set(ZLIB_LIBRARIES "${THIRDPARTY_INSTALL}/lib/${ZLIB_NAME}${LIB_SUFFIX}")
+  message(STATUS "Using local zlib: ${ZLIB_LIBRARIES}")
+else()
+  find_package(ZLIB REQUIRED)
+endif()
+
+if (DOWNLOAD_FREEGLUT)
+  include(ExternalProject)
+  ExternalProject_Add(freeglut
+    URL "http://downloads.sourceforge.net/project/freeglut/freeglut/3.0.0/freeglut-3.0.0.tar.gz"
+    URL_MD5 90c3ca4dd9d51cf32276bc5344ec9754
+    DOWNLOAD_DIR ${thirdparty_dir}
+    SOURCE_DIR ${thirdparty_dir}/freeglut
+    BINARY_DIR ${CMAKE_BINARY_DIR}/freeglut
+    PREFIX freeglut-stamps
+    CMAKE_ARGS -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS}
+               -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS}
+               -DCMAKE_INSTALL_PREFIX:PATH=${THIRDPARTY_INSTALL}
+               -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+               -DCMAKE_INSTALL_LIBDIR:PATH=${THIRDPARTY_INSTALL}/lib
+               -DFREEGLUT_REPLACE_GLUT=OFF
+               -DFREEGLUT_BUILD_SHARED_LIBS=OFF)
+  set(GLUT_INCLUDE_DIR "${THIRDPARTY_INSTALL}/include")
+  set(GLUT_LIBRARIES
+      "${THIRDPARTY_INSTALL}/lib/${LIB_PREFIX}freeglut${LIB_SUFFIX}")
+  if(UNIX AND NOT(ANDROID OR BLACKBERRY))
+    find_package(X11 REQUIRED)
+    foreach (_lib Xrandr Xxf86vm Xinput)
+      if(X11_${_lib}_LIB)
+        list(APPEND GLUT_LIBRARIES ${X11_${_lib}_LIB})
+      endif()
+    endforeach()
+    list(APPEND GLUT_LIBRARIES ${X11_LIBRARIES})
+  endif()
+  message(STATUS "Using local freeglut: ${GLUT_LIBRARIES}")
+else()
+  find_package(GLUT REQUIRED)
+  # FindGLUT.cmake adds libXmu and libXi even if it's not needed
+  if (NOT GLUT_Xmu_LIBRARY)
+    set(GLUT_Xmu_LIBRARY "")
+  endif()
+  if (NOT GLUT_Xi_LIBRARY)
+    set(GLUT_Xi_LIBRARY "")
+  endif()
+  set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY} ${GLUT_Xmu_LIBRARY} ${GLUT_Xi_LIBRARY}
+                     ${GLUT_cocoa_LIBRARY})
+endif()
+
 if (DEFINED USE_X11_ICON AND USE_X11_ICON)
   find_package(X11 REQUIRED)
   if (NOT X11_Xpm_LIB)
@@ -68,16 +144,6 @@ endif()
 include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIR})
 include_directories(${ZLIB_INCLUDE_DIRS} ${X11_INCLUDE_DIR})
 include_directories("${PROJECT_SOURCE_DIR}")
-
-# FindGLUT.cmake adds libXmu and libXi even if it's not needed
-if (NOT GLUT_Xmu_LIBRARY)
-  set(GLUT_Xmu_LIBRARY "")
-endif()
-if (NOT GLUT_Xi_LIBRARY)
-  set(GLUT_Xi_LIBRARY "")
-endif()
-set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY} ${GLUT_Xmu_LIBRARY} ${GLUT_Xi_LIBRARY}
-                   ${GLUT_cocoa_LIBRARY})
 
 # show warnings by default
 check_cxx_compiler_flag(-Wextra HAS_WEXTRA_FLAG)
@@ -125,7 +191,12 @@ res/raw/initial.pdb
 if (USE_NFD)
   add_dependencies(ndkmol nativefiledialog)
 endif()
-
+if (DOWNLOAD_ZLIB)
+  add_dependencies(ndkmol zlib)
+endif()
+if (DOWNLOAD_FREEGLUT)
+  add_dependencies(ndkmol freeglut)
+endif()
 
 # We could make an app bundle, but would it be useful?
 #if (APPLE AND MACOSX_BUNDLE)
