@@ -39,7 +39,7 @@ if (USE_NFD)
   if (NOT NFD_INCLUDE)
     include(ExternalProject)
     ExternalProject_Add(nativefiledialog
-      GIT_REPOSITORY git@github.com:mlabbe/nativefiledialog.git
+      GIT_REPOSITORY https://github.com/mlabbe/nativefiledialog
       SOURCE_DIR ${CMAKE_SOURCE_DIR}/nfd
       PREFIX nfd-stamps
       CONFIGURE_COMMAND ""
