@@ -145,6 +145,13 @@ include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIR})
 include_directories(${ZLIB_INCLUDE_DIRS} ${X11_INCLUDE_DIR})
 include_directories("${PROJECT_SOURCE_DIR}")
 
+if (WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/GL/glext.h")
+  file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/GL")
+  message(STATUS "Downloading glext.h...")
+  file(DOWNLOAD https://www.opengl.org/registry/api/GL/glext.h
+       "${CMAKE_SOURCE_DIR}/GL/glext.h" SHOW_PROGRESS)
+endif()
+
 # show warnings by default
 check_cxx_compiler_flag(-Wextra HAS_WEXTRA_FLAG)
 if (HAS_WEXTRA_FLAG)
