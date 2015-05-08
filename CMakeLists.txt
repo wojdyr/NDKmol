@@ -136,8 +136,11 @@ if (USE_NFD)
     set_source_files_properties(${NFD_SRC}/nfd_common.c ${NFD_PLAT_SRC}
                                 PROPERTIES GENERATED TRUE)
     add_library(nfd STATIC ${NFD_SRC}/nfd_common.c ${NFD_PLAT_SRC})
-    set_property(TARGET nfd PROPERTY INCLUDE_DIRECTORIES
-                 ${NFD_INCLUDE} ${GTK2_INCLUDE_DIRS})
+    # neither set_property nor set_target_properties seem to work with
+    # cmake 2.8.7, so we use include_directories instead
+    #set_property(TARGET nfd PROPERTY INCLUDE_DIRECTORIES
+    #             ${NFD_INCLUDE} ${GTK2_INCLUDE_DIRS})
+    include_directories(${GTK2_INCLUDE_DIRS})
     set(EXTRA_LIBS ${EXTRA_LIBS} nfd ${GTK2_LIBRARIES})
   endif()
 endif()
